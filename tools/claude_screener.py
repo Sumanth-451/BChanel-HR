@@ -82,6 +82,7 @@ Application Stage: {candidate.get('stage', '')}
 
 Return ONLY valid JSON with these exact fields:
 - candidate_name (string)
+- current_job_title (string — infer from skills/context if not stated, else empty string)
 - target_role (string)
 - match_score (integer 0-100)
 - recommendation (one of: "Strong Hire", "Hire", "Conditional", "Do Not Advance")
@@ -136,7 +137,7 @@ Return ONLY valid JSON with these exact fields:
         "candidate_id":         candidate.get("record_id", ""),
         "candidate_name":       result.get("candidate_name", candidate.get("name", "")),
         "email":                candidate.get("email", ""),
-        "current_job_title":    candidate.get("current_role", ""),
+        "current_job_title":    result.get("current_job_title", "") or candidate.get("current_role", ""),
         "skills":               candidate.get("skills", ""),
         "target_role":          result.get("target_role", candidate.get("target_role", "")),
         "screen_result":        str(result.get("match_score", 0)),

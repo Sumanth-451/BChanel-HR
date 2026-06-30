@@ -6,7 +6,7 @@ Expected columns (flexible — maps by header name):
 """
 import csv
 import io
-from typing import Any
+from typing import Any, Dict, List
 
 
 _COLUMN_MAP = {
@@ -23,7 +23,7 @@ _COLUMN_MAP = {
 }
 
 
-def parse_zoho_csv(content: bytes) -> list[dict[str, Any]]:
+def parse_zoho_csv(content: bytes) -> List[Dict[str, Any]]:
     """
     Parse raw CSV bytes from a Zoho Recruit export.
     Returns list of candidate dicts with normalised keys.
@@ -33,9 +33,10 @@ def parse_zoho_csv(content: bytes) -> list[dict[str, Any]]:
 
     candidates = []
     for row in reader:
-        candidate: dict[str, Any] = {}
+        candidate: Dict[str, Any] = {}
         for raw_key, value in row.items():
-            norm = raw_key.strip().lower()
+            # collapse multiple spaces so "Record  Id" matches "record id"
+            norm = " ".join(raw_key.strip().lower().split())
             mapped = _COLUMN_MAP.get(norm, norm.replace(" ", "_"))
             candidate[mapped] = (value or "").strip()
 
