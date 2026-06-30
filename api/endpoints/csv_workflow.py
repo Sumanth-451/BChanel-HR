@@ -5,7 +5,7 @@ write results to Google Sheets SCREEN tab, return summary + per-row results.
 import asyncio
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Optional, List, Dict
 
 from tools.csv_parser import parse_zoho_csv
 from tools.claude_screener import screen_candidate
@@ -24,12 +24,13 @@ class ScreeningSummary(BaseModel):
     hire: int
     conditional: int
     do_not_advance: int
-    results: list[dict[str, Any]]
+    results: List[Dict[str, Any]]
 
 
 class HumanApprovalRequest(BaseModel):
     row_number: int
     approved: bool
+    result: Optional[Dict[str, Any]] = None  # candidate result — needed for rejection routing
 
 
 @router.post("/upload", response_model=ScreeningSummary)
@@ -60,7 +61,7 @@ async def upload_and_screen(file: UploadFile = File(...)):
     results = []
     failed = 0
 
-    async def _screen_one(candidate: dict) -> dict | None:
+    async def _screen_one(candidate: dict) -> Optional[dict]:
         async with semaphore:
             try:
                 loop = asyncio.get_event_loop()
@@ -103,25 +104,32 @@ async def upload_and_screen(file: UploadFile = File(...)):
         failed=failed,
     )
 
+    # Split results: rejected go to their own bucket so dashboard shows them separately
+    screen_results   = [r for r in results if r.get("recommendation", "") != "Do Not Advance"]
+    rejected_results = [r for r in results if r.get("recommendation", "") == "Do Not Advance"]
+
     return ScreeningSummary(
         total=len(candidates),
-        screened=len(results),
+        screened=len(screen_results),
         failed=failed,
         strong_hire=rec_counts["Strong Hire"],
         hire=rec_counts["Hire"],
         conditional=rec_counts["Conditional"],
         do_not_advance=rec_counts["Do Not Advance"],
-        results=results,
+        results=screen_results + rejected_results,  # SCREEN candidates first, then rejected
     )
 
 
 @router.post("/approve")
 async def set_human_approval(req: HumanApprovalRequest):
-    """Set col Y (HumanApproval) for a specific row: APPROVED or REJECTED."""
+    """
+    Approve: set col Y = APPROVED on SCREEN tab.
+    Reject:  mark SCREEN row as REJECTED + copy candidate to REJECTED tab.
+    """
     try:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
-            None, update_human_approval, req.row_number, req.approved
+            None, update_human_approval, req.row_number, req.approved, req.result
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Sheets write failed: {exc}")

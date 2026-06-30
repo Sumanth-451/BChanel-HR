@@ -1708,7 +1708,7 @@ async function csvApprove(idx, approved) {
     const res = await fetch('/api/csv/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ row_number: row, approved }),
+      body: JSON.stringify({ row_number: row, approved, result: r }),
     });
     if (!res.ok) throw new Error(await res.text());
     CSV.approvals[row] = approved ? 'approved' : 'rejected';

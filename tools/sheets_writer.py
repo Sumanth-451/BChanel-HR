@@ -47,8 +47,8 @@ def _get_access_token() -> str:
     return creds.token
 
 
-def _candidate_to_row(result: dict) -> list:
-    """Map screening result dict → ordered list matching SCREEN tab columns A-Z."""
+def _candidate_to_row(result: dict, status: str = "SCREENED") -> list:
+    """Map screening result dict → ordered list matching SCREEN/REJECTED tab columns A-Z."""
     return [
         result.get("candidate_id", ""),           # A - CandidateID
         result.get("candidate_name", ""),          # B - CandidateName
@@ -56,8 +56,8 @@ def _candidate_to_row(result: dict) -> list:
         result.get("current_job_title", ""),       # D - CurrentJobTitle
         result.get("skills", ""),                  # E - Skills
         result.get("target_role", ""),             # F - TargetRole
-        "",                                        # G - JobDescription (populated by cron)
-        "",                                        # H - RequiredSkills (populated by cron)
+        "",                                        # G - JobDescription
+        "",                                        # H - RequiredSkills
         result.get("screen_result", ""),           # I - ScreenResult (score)
         result.get("recommendation", ""),          # J - Recommendation
         result.get("strengths", ""),               # K - Strengths
@@ -67,7 +67,7 @@ def _candidate_to_row(result: dict) -> list:
         result.get("hiring_risks", ""),            # O - HiringRisks
         result.get("summary", ""),                 # P - Summary
         "",                                        # Q - FinalStatus
-        "SCREENED",                                # R - Status
+        status,                                    # R - Status
         "",                                        # S - CalendarLinkSent
         "",                                        # T - InterviewDatetime
         "",                                        # U - VapiCallID
@@ -79,54 +79,104 @@ def _candidate_to_row(result: dict) -> list:
     ]
 
 
-def append_screened_candidate(result: dict) -> int:
-    """
-    Append one screened candidate row to the SCREEN tab.
-    Returns the row number written (1-indexed).
-    """
+def _append_to_tab(tab: str, row: list, token: str) -> int:
+    """Append a row to any tab. Returns the row number written."""
     sheet_id = _settings.google_sheets_id
-    if not sheet_id:
-        raise RuntimeError("GOOGLE_SHEETS_ID not set in environment.")
-
-    token = _get_access_token()
-    row = _candidate_to_row(result)
-
-    url = f"{SHEETS_API}/{sheet_id}/values/SCREEN!A:Z:append"
-    params = {
-        "valueInputOption": "USER_ENTERED",
-        "insertDataOption": "INSERT_ROWS",
-    }
+    url = f"{SHEETS_API}/{sheet_id}/values/{tab}!A:Z:append"
+    params = {"valueInputOption": "USER_ENTERED", "insertDataOption": "INSERT_ROWS"}
     headers = {"Authorization": f"Bearer {token}"}
     body = {"values": [row]}
 
     resp = httpx.post(url, params=params, headers=headers, json=body, timeout=15)
     resp.raise_for_status()
 
-    data = resp.json()
-    updated_range = data.get("updates", {}).get("updatedRange", "")
-    logger.info("sheet_row_written", range=updated_range, candidate=result.get("candidate_name"))
+    updated_range = resp.json().get("updates", {}).get("updatedRange", "")
+    logger.info("sheet_row_written", tab=tab, range=updated_range)
 
-    # Parse row number from range like "SCREEN!A103:Z103"
     try:
-        row_num = int(updated_range.split("!")[1].split(":")[0][1:])
+        return int(updated_range.split("!")[1].split(":")[0][1:])
     except Exception:
-        row_num = -1
+        return -1
+
+
+def append_screened_candidate(result: dict) -> int:
+    """
+    Route candidate to the correct tab:
+      - 'Do Not Advance' → REJECTED tab, status = REJECTED
+      - Everything else  → SCREEN tab,   status = SCREENED
+    Returns the row number written.
+    """
+    sheet_id = _settings.google_sheets_id
+    if not sheet_id:
+        raise RuntimeError("GOOGLE_SHEETS_ID not set in environment.")
+
+    token = _get_access_token()
+    is_rejected = (result.get("recommendation", "").lower() == "do not advance")
+
+    if is_rejected:
+        row = _candidate_to_row(result, status="REJECTED")
+        row_num = _append_to_tab("REJECTED", row, token)
+        logger.info("candidate_routed_rejected", candidate=result.get("candidate_name"))
+    else:
+        row = _candidate_to_row(result, status="SCREENED")
+        row_num = _append_to_tab("SCREEN", row, token)
+        logger.info("candidate_routed_screen", candidate=result.get("candidate_name"))
 
     return row_num
 
 
-def update_human_approval(row_number: int, approved: bool) -> None:
-    """Set col Y (HumanApproval) on a specific row."""
+def reject_screened_candidate(screen_row_number: int, result: dict) -> None:
+    """
+    HR manually rejects a SCREENED candidate:
+    1. Update col R on SCREEN tab to REJECTED + col Y to REJECTED
+    2. Append the candidate row to REJECTED tab
+    """
     sheet_id = _settings.google_sheets_id
     token = _get_access_token()
 
-    value = "APPROVED" if approved else "REJECTED"
-    range_name = f"SCREEN!Y{row_number}"
+    # Mark SCREEN row as REJECTED (cols R + Y)
+    range_name = f"SCREEN!R{screen_row_number}:Y{screen_row_number}"
     url = f"{SHEETS_API}/{sheet_id}/values/{range_name}"
     params = {"valueInputOption": "USER_ENTERED"}
     headers = {"Authorization": f"Bearer {token}"}
-    body = {"values": [[value]]}
+    # R is col 18, Y is col 25 — fill the gap cols S-X with empty strings
+    body = {"values": [["REJECTED", "", "", "", "", "", "", "REJECTED"]]}
 
     resp = httpx.put(url, params=params, headers=headers, json=body, timeout=15)
     resp.raise_for_status()
-    logger.info("human_approval_written", row=row_number, value=value)
+
+    # Append to REJECTED tab
+    row = _candidate_to_row(result, status="REJECTED")
+    _append_to_tab("REJECTED", row, token)
+    logger.info("candidate_moved_to_rejected", screen_row=screen_row_number,
+                candidate=result.get("candidate_name"))
+
+
+def update_human_approval(row_number: int, approved: bool, result: dict = None) -> None:
+    """
+    Approve: set col Y = APPROVED on SCREEN tab.
+    Reject:  call reject_screened_candidate (marks SCREEN + copies to REJECTED tab).
+    """
+    if approved:
+        sheet_id = _settings.google_sheets_id
+        token = _get_access_token()
+        url = f"{SHEETS_API}/{sheet_id}/values/SCREEN!Y{row_number}"
+        params = {"valueInputOption": "USER_ENTERED"}
+        headers = {"Authorization": f"Bearer {token}"}
+        body = {"values": [["APPROVED"]]}
+        resp = httpx.put(url, params=params, headers=headers, json=body, timeout=15)
+        resp.raise_for_status()
+        logger.info("human_approval_written", row=row_number, value="APPROVED")
+    else:
+        if result is None:
+            # Fallback: just mark col Y on SCREEN tab
+            sheet_id = _settings.google_sheets_id
+            token = _get_access_token()
+            url = f"{SHEETS_API}/{sheet_id}/values/SCREEN!Y{row_number}"
+            params = {"valueInputOption": "USER_ENTERED"}
+            headers = {"Authorization": f"Bearer {token}"}
+            body = {"values": [["REJECTED"]]}
+            resp = httpx.put(url, params=params, headers=headers, json=body, timeout=15)
+            resp.raise_for_status()
+        else:
+            reject_screened_candidate(row_number, result)
