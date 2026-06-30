@@ -45,6 +45,12 @@ google-api-python-client>=2.100.0
 google-auth-httplib2>=0.2.0
 google-auth-oauthlib>=1.2.0
 
+# Anthropic (Claude) — CSV screening path
+anthropic>=0.25.0
+
+# Google auth (token refresh for Sheets writer)
+google-auth>=2.0.0
+
 # Utilities
 python-dotenv>=1.0.0
 python-dateutil>=2.9.0

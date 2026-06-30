@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Agentic HR</title>
+<title>Agentic HR — BChanel</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -615,6 +615,123 @@ header {
 
 .onb-badge { flex-shrink: 0; }
 
+/* ── Mode tabs ── */
+.mode-tabs {
+  display: flex; align-items: center; gap: 4px;
+  padding: 16px 40px 0;
+  position: relative; z-index: 1;
+}
+.mode-tab {
+  font-size: 13px; font-weight: 600; padding: 7px 18px;
+  border-radius: 8px 8px 0 0; border: 1px solid transparent;
+  border-bottom: none; cursor: pointer; background: transparent;
+  color: var(--muted); font-family: inherit; transition: all .15s;
+}
+.mode-tab.active {
+  background: var(--surface); color: var(--text);
+  border-color: var(--border);
+}
+.mode-tab:hover:not(.active) { color: var(--muted2); }
+.tab-divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 0 40px; position: relative; z-index: 1;
+}
+
+/* ── CSV upload zone ── */
+.csv-dropzone {
+  border: 1.5px dashed var(--border2); border-radius: 14px;
+  padding: 40px 24px; text-align: center; cursor: pointer;
+  transition: all .2s; position: relative; background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.csv-dropzone:hover, .csv-dropzone.drag-over {
+  border-color: var(--accent); background: var(--accent-dim);
+}
+.csv-dropzone.filled { border-color: var(--green); border-style: solid; background: #0a1f1288; }
+.csv-dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.csv-dz-icon  { font-size: 36px; }
+.csv-dz-label { font-size: 15px; font-weight: 700; color: var(--text); }
+.csv-dz-hint  { font-size: 12px; color: var(--muted); }
+
+/* ── CSV summary strip ── */
+.csv-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin: 20px 0;
+}
+.csv-stat {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; text-align: center;
+}
+.csv-stat-num  { font-size: 26px; font-weight: 800; }
+.csv-stat-label{ font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+.n-strong { color: var(--green); }
+.n-hire   { color: var(--blue); }
+.n-cond   { color: var(--yellow); }
+.n-dna    { color: var(--red); }
+
+/* ── CSV result cards ── */
+.csv-result-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px; margin-bottom: 10px;
+  transition: border-color .2s;
+}
+.csv-result-card:hover { border-color: var(--border2); }
+.csv-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 12px; gap: 12px;
+}
+.csv-card-meta { flex: 1; min-width: 0; }
+.csv-card-name { font-size: 15px; font-weight: 700; }
+.csv-card-role { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.csv-card-email{ font-size: 12px; color: var(--muted2); margin-top: 2px; }
+.rec-badge {
+  font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 99px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.rec-strong { background:#0a1f12; color:var(--green); border:1px solid #1a5c30; }
+.rec-hire   { background:#0d1a2f; color:var(--blue);  border:1px solid #1e3a8a55; }
+.rec-cond   { background:#1a1306; color:var(--yellow);border:1px solid #78350f55; }
+.rec-dna    { background:var(--red-bg); color:var(--red); border:1px solid #5c1a1a; }
+
+.csv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
+.csv-field  {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+}
+.csv-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 4px; }
+.csv-field-val   { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.5; }
+.csv-summary-text{
+  font-size: 13px; color: var(--muted2); line-height: 1.65;
+  padding: 10px 14px; background: var(--surface); border-radius: 8px;
+  margin-bottom: 12px; border-left: 3px solid var(--accent);
+}
+.csv-hitl-row {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+.csv-hitl-row .btn { flex: 1; font-size: 12px; padding: 8px 12px; }
+.csv-approved-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; color: var(--green);
+  background: var(--green-bg); border: 1px solid #1a5c30;
+  border-radius: 6px; padding: 6px 14px;
+}
+.csv-rejected-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; color: var(--red);
+  background: var(--red-bg); border: 1px solid #5c1a1a;
+  border-radius: 6px; padding: 6px 14px;
+}
+
+/* ── Score ring (reuse from donut but smaller) ── */
+.score-ring-wrap { flex-shrink: 0; position: relative; width: 52px; height: 52px; }
+.score-ring-wrap svg { width: 52px; height: 52px; transform: rotate(-90deg); }
+.sr-bg   { fill: none; stroke: var(--border); stroke-width: 4; }
+.sr-fill { fill: none; stroke-width: 4; stroke-linecap: round; }
+.score-ring-num {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
+}
+
 /* ── Misc ── */
 .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
 </style>
@@ -633,7 +750,14 @@ header {
 </header>
 
 <div id="app">
-  <!-- Pipeline strip (hidden on upload) -->
+  <!-- Mode tabs -->
+  <div class="mode-tabs" id="mode-tabs">
+    <button class="mode-tab active" id="tab-pdf" onclick="switchMode('pdf')">Resume Workflow</button>
+    <button class="mode-tab"        id="tab-csv" onclick="switchMode('csv')">CSV Screening</button>
+  </div>
+  <hr class="tab-divider"/>
+
+  <!-- Pipeline strip (hidden on upload / csv mode) -->
   <div class="pipeline-strip" id="pipeline-strip">
     <div class="pipeline-row" id="pipeline-row"></div>
   </div>
@@ -1352,6 +1476,258 @@ function newSession() {
 
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Mode switching ──────────────────────────────────────────────────────
+let MODE = 'pdf'; // 'pdf' | 'csv'
+
+function switchMode(m) {
+  MODE = m;
+  document.getElementById('tab-pdf').classList.toggle('active', m === 'pdf');
+  document.getElementById('tab-csv').classList.toggle('active', m === 'csv');
+  if (m === 'csv') {
+    document.getElementById('pipeline-strip').style.display = 'none';
+    document.getElementById('new-btn').style.display = 'none';
+    renderCsvView();
+  } else {
+    render(S.view);
+  }
+}
+
+// ─── CSV state ────────────────────────────────────────────────────────────
+const CSV = {
+  file: null,
+  state: 'idle',      // idle | uploading | done | error
+  summary: null,
+  results: [],
+  approvals: {},      // rowNumber → 'approved' | 'rejected'
+  error: null,
+};
+
+function renderCsvView() {
+  const el = document.getElementById('content');
+  el.innerHTML = csvHtml();
+  bindCsvDrop();
+}
+
+function csvHtml() {
+  if (CSV.state === 'uploading') return csvUploading();
+  if (CSV.state === 'done')      return csvResults();
+  if (CSV.state === 'error')     return csvError();
+  return csvUploadScreen();
+}
+
+function csvUploadScreen() {
+  const fileHtml = CSV.file
+    ? `<div class="file-chip" style="margin-top:10px;max-width:340px">
+         <span class="fc-name">📄 ${esc(CSV.file.name)}</span>
+         <span class="fc-size">${(CSV.file.size/1024).toFixed(0)} KB</span>
+       </div>` : '';
+  return `
+  <div class="upload-hero">
+    <h1>CSV Candidate Screening</h1>
+    <p>Export your applicants from Zoho Recruit as a CSV, upload here,<br>and the AI agent screens every candidate and writes results to Google Sheets.</p>
+  </div>
+  <div style="max-width:520px;margin:0 auto">
+    <div class="upload-label" style="margin-bottom:8px">Zoho Recruit CSV Export</div>
+    <div class="csv-dropzone ${CSV.file ? 'filled' : ''}" id="csv-zone">
+      <input type="file" id="csv-input" accept=".csv" onchange="onCsvPick(this)"/>
+      <div class="csv-dz-icon">${CSV.file ? '✅' : '📊'}</div>
+      <div class="csv-dz-label">${CSV.file ? esc(CSV.file.name) : 'Drop CSV or click to select'}</div>
+      <div class="csv-dz-hint">${CSV.file ? `${(CSV.file.size/1024).toFixed(0)} KB ready` : 'Zoho Recruit → Applications → Export CSV'}</div>
+    </div>
+    <div style="margin-top:16px">
+      <button class="btn btn-primary" id="csv-btn" onclick="runCsvScreen()" ${CSV.file ? '' : 'disabled'}>
+        Screen All Candidates →
+      </button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.7;text-align:center">
+      Each candidate is screened against their target role using Claude AI.<br>
+      Results are written to the <strong style="color:var(--muted2)">SCREEN</strong> tab of your Google Sheet automatically.
+    </p>
+  </div>`;
+}
+
+function csvUploading() {
+  return `
+  <div class="agent-stage" style="max-width:580px;margin:0 auto">
+    <div class="glow-ring">🤖</div>
+    <div class="agent-pill"><div class="agent-pill-dot"></div>Screening in Progress</div>
+    <div class="agent-title">Claude Screening Agent</div>
+    <div class="agent-desc">
+      Reading each candidate's skills and scoring them against their target role.<br>
+      Writing results to Google Sheets SCREEN tab as they complete…
+    </div>
+  </div>`;
+}
+
+function csvError() {
+  return `
+  <div class="error-stage" style="max-width:580px;margin:0 auto">
+    <div class="error-icon">⚠</div>
+    <div class="error-title">Screening Failed</div>
+    <div class="error-msg">${esc(CSV.error || 'An unexpected error occurred.')}</div>
+    <button class="btn btn-outline" onclick="csvReset()">Try Again</button>
+  </div>`;
+}
+
+function csvResults() {
+  const s = CSV.summary;
+  const summaryStrip = s ? `
+  <div class="csv-summary">
+    <div class="csv-stat"><div class="csv-stat-num n-strong">${s.strong_hire}</div><div class="csv-stat-label">Strong Hire</div></div>
+    <div class="csv-stat"><div class="csv-stat-num n-hire">${s.hire}</div><div class="csv-stat-label">Hire</div></div>
+    <div class="csv-stat"><div class="csv-stat-num n-cond">${s.conditional}</div><div class="csv-stat-label">Conditional</div></div>
+    <div class="csv-stat"><div class="csv-stat-num n-dna">${s.do_not_advance}</div><div class="csv-stat-label">Do Not Advance</div></div>
+  </div>` : '';
+
+  const cards = CSV.results.map((r, idx) => csvResultCard(r, idx)).join('');
+
+  return `
+  <div class="sec-head">
+    <h2>Screening Results</h2>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="count-pill">${CSV.results.length} screened${s && s.failed ? ` · ${s.failed} failed` : ''}</span>
+      <button class="btn btn-ghost" onclick="csvReset()" style="font-size:12px;padding:5px 14px">+ New Upload</button>
+    </div>
+  </div>
+  <p style="font-size:13px;color:var(--muted2);margin-bottom:16px">
+    Results written to Google Sheets SCREEN tab. Approve or reject each candidate below — col Y (HumanApproval) updates live.
+  </p>
+  ${summaryStrip}
+  <div id="csv-cards">${cards}</div>`;
+}
+
+function csvResultCard(r, idx) {
+  const score = parseInt(r.screen_result, 10) || 0;
+  const recCls = recClass(r.recommendation);
+  const r22 = 21, circ = 2 * Math.PI * r22;
+  const ringColor = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+  const fill = circ * (score / 100), gap = circ - fill;
+  const approval = CSV.approvals[r.sheet_row];
+
+  let hitlHtml;
+  if (approval === 'approved') {
+    hitlHtml = `<div class="csv-approved-badge">✓ Approved</div>`;
+  } else if (approval === 'rejected') {
+    hitlHtml = `<div class="csv-rejected-badge">✕ Rejected</div>`;
+  } else {
+    hitlHtml = `<div class="csv-hitl-row">
+      <button class="btn btn-approve" onclick="csvApprove(${idx}, true)">✓ Approve</button>
+      <button class="btn btn-reject"  onclick="csvApprove(${idx}, false)">✕ Reject</button>
+    </div>`;
+  }
+
+  return `
+  <div class="csv-result-card" id="csv-card-${idx}">
+    <div class="csv-card-head">
+      <div class="csv-card-meta">
+        <div class="csv-card-name">${esc(r.candidate_name || '—')}</div>
+        <div class="csv-card-role">${esc(r.target_role || '—')}</div>
+        <div class="csv-card-email">${esc(r.email || '')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 52 52">
+            <circle class="sr-bg" cx="26" cy="26" r="${r22}"/>
+            <circle class="sr-fill" cx="26" cy="26" r="${r22}"
+              stroke="${ringColor}" stroke-dasharray="${fill} ${gap}"/>
+          </svg>
+          <div class="score-ring-num" style="color:${ringColor}">${score}</div>
+        </div>
+        <span class="rec-badge ${recCls}">${esc(r.recommendation || '—')}</span>
+      </div>
+    </div>
+    ${r.summary ? `<div class="csv-summary-text">${esc(r.summary)}</div>` : ''}
+    <div class="csv-fields">
+      <div class="csv-field"><div class="csv-field-label">Strengths</div><div class="csv-field-val">${esc(r.strengths || '—')}</div></div>
+      <div class="csv-field"><div class="csv-field-label">Missing Skills</div><div class="csv-field-val">${esc(r.missing_skills || '—')}</div></div>
+      <div class="csv-field" style="grid-column:1/-1"><div class="csv-field-label">Interview Focus Areas</div><div class="csv-field-val">${esc(r.interview_focus_areas || '—')}</div></div>
+    </div>
+    ${hitlHtml}
+  </div>`;
+}
+
+function recClass(rec) {
+  const r = (rec || '').toLowerCase();
+  if (r.includes('strong')) return 'rec-strong';
+  if (r === 'hire')          return 'rec-hire';
+  if (r.includes('cond'))    return 'rec-cond';
+  return 'rec-dna';
+}
+
+function bindCsvDrop() {
+  const zone = document.getElementById('csv-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.name.endsWith('.csv')) { CSV.file = f; renderCsvView(); }
+  });
+}
+
+function onCsvPick(input) {
+  CSV.file = input.files[0] || null;
+  renderCsvView();
+}
+
+async function runCsvScreen() {
+  if (!CSV.file) return;
+  CSV.state = 'uploading';
+  renderCsvView();
+
+  const fd = new FormData();
+  fd.append('file', CSV.file);
+
+  try {
+    const res = await fetch('/api/csv/upload', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(txt);
+    }
+    const data = await res.json();
+    CSV.summary = data;
+    CSV.results = data.results || [];
+    CSV.approvals = {};
+    CSV.state = 'done';
+  } catch (e) {
+    CSV.error = e.message;
+    CSV.state = 'error';
+  }
+  renderCsvView();
+}
+
+async function csvApprove(idx, approved) {
+  const r = CSV.results[idx];
+  if (!r) return;
+  const row = r.sheet_row;
+
+  try {
+    const res = await fetch('/api/csv/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row_number: row, approved }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    CSV.approvals[row] = approved ? 'approved' : 'rejected';
+    // Re-render just this card
+    const card = document.getElementById(`csv-card-${idx}`);
+    if (card) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = csvResultCard(r, idx);
+      card.replaceWith(tmp.firstElementChild);
+    }
+  } catch (e) {
+    alert('Failed to save approval: ' + e.message);
+  }
+}
+
+function csvReset() {
+  CSV.file = null; CSV.state = 'idle'; CSV.summary = null;
+  CSV.results = []; CSV.approvals = {}; CSV.error = null;
+  renderCsvView();
 }
 
 // ─── Drawer (step detail panel) ───────────────────────────────────────────
