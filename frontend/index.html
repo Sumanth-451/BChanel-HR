@@ -1499,7 +1499,8 @@ const CSV = {
   file: null,
   state: 'idle',      // idle | uploading | done | error
   summary: null,
-  results: [],
+  results: [],        // SCREEN tab candidates (Strong Hire / Hire / Conditional)
+  rejected: [],       // REJECTED tab candidates (Zoho-rejected + Do Not Advance)
   approvals: {},      // rowNumber → 'approved' | 'rejected'
   error: null,
 };
@@ -1573,29 +1574,56 @@ function csvError() {
 
 function csvResults() {
   const s = CSV.summary;
+  const totalRejected = (s ? s.pre_rejected + s.do_not_advance : 0) + CSV.rejected.length;
+
   const summaryStrip = s ? `
   <div class="csv-summary">
     <div class="csv-stat"><div class="csv-stat-num n-strong">${s.strong_hire}</div><div class="csv-stat-label">Strong Hire</div></div>
     <div class="csv-stat"><div class="csv-stat-num n-hire">${s.hire}</div><div class="csv-stat-label">Hire</div></div>
     <div class="csv-stat"><div class="csv-stat-num n-cond">${s.conditional}</div><div class="csv-stat-label">Conditional</div></div>
-    <div class="csv-stat"><div class="csv-stat-num n-dna">${s.do_not_advance}</div><div class="csv-stat-label">Do Not Advance</div></div>
+    <div class="csv-stat"><div class="csv-stat-num n-dna">${totalRejected}</div><div class="csv-stat-label">Rejected</div></div>
   </div>` : '';
 
-  const cards = CSV.results.map((r, idx) => csvResultCard(r, idx)).join('');
+  const screenCards = CSV.results.map((r, idx) => csvResultCard(r, idx)).join('');
+
+  const rejectedCards = CSV.rejected.map((r, idx) => `
+  <div class="csv-result-card" style="border-color:#2a1010;opacity:.8">
+    <div class="csv-card-head">
+      <div class="csv-card-meta">
+        <div class="csv-card-name">${esc(r.candidate_name || r.name || '—')}</div>
+        <div class="csv-card-role">${esc(r.target_role || '—')}</div>
+        <div class="csv-card-email">${esc(r.email || '')}</div>
+      </div>
+      <span class="rec-badge rec-dna">${esc(r.recommendation || 'Rejected')}</span>
+    </div>
+    ${r.summary ? `<div class="csv-summary-text">${esc(r.summary)}</div>` : ''}
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">→ Written to REJECTED tab</div>
+  </div>`).join('');
+
+  const rejectedSection = CSV.rejected.length ? `
+  <div class="sec-head" style="margin-top:28px">
+    <h2 style="color:var(--red)">Rejected</h2>
+    <span class="count-pill">${CSV.rejected.length} candidates</span>
+  </div>
+  <p style="font-size:13px;color:var(--muted2);margin-bottom:14px">
+    These candidates were either rejected in Zoho or scored Do Not Advance — written directly to the REJECTED tab.
+  </p>
+  ${rejectedCards}` : '';
 
   return `
   <div class="sec-head">
     <h2>Screening Results</h2>
     <div style="display:flex;gap:10px;align-items:center">
-      <span class="count-pill">${CSV.results.length} screened${s && s.failed ? ` · ${s.failed} failed` : ''}</span>
+      <span class="count-pill">${CSV.results.length} to review${s && s.failed ? ` · ${s.failed} failed` : ''}</span>
       <button class="btn btn-ghost" onclick="csvReset()" style="font-size:12px;padding:5px 14px">+ New Upload</button>
     </div>
   </div>
   <p style="font-size:13px;color:var(--muted2);margin-bottom:16px">
-    Results written to Google Sheets SCREEN tab. Approve or reject each candidate below — col Y (HumanApproval) updates live.
+    Approve or reject each candidate — SCREEN tab updates live in Google Sheets.
   </p>
   ${summaryStrip}
-  <div id="csv-cards">${cards}</div>`;
+  <div id="csv-cards">${screenCards}</div>
+  ${rejectedSection}`;
 }
 
 function csvResultCard(r, idx) {
@@ -1690,6 +1718,7 @@ async function runCsvScreen() {
     const data = await res.json();
     CSV.summary = data;
     CSV.results = data.results || [];
+    CSV.rejected = data.rejected_results || [];
     CSV.approvals = {};
     CSV.state = 'done';
   } catch (e) {
@@ -1726,7 +1755,7 @@ async function csvApprove(idx, approved) {
 
 function csvReset() {
   CSV.file = null; CSV.state = 'idle'; CSV.summary = null;
-  CSV.results = []; CSV.approvals = {}; CSV.error = null;
+  CSV.results = []; CSV.rejected = []; CSV.approvals = {}; CSV.error = null;
   renderCsvView();
 }
 

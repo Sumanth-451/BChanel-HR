@@ -99,6 +99,35 @@ def _append_to_tab(tab: str, row: list, token: str) -> int:
         return -1
 
 
+def write_pre_rejected(candidate: dict) -> int:
+    """
+    Write a Zoho-stage-Rejected candidate directly to the REJECTED tab.
+    No Claude screening — just basic info from the CSV row.
+    """
+    sheet_id = _settings.google_sheets_id
+    if not sheet_id:
+        raise RuntimeError("GOOGLE_SHEETS_ID not set in environment.")
+
+    token = _get_access_token()
+    row = [
+        candidate.get("record_id", ""),         # A
+        candidate.get("name", ""),              # B
+        candidate.get("email", ""),             # C
+        "",                                     # D - CurrentJobTitle
+        candidate.get("skills", ""),            # E
+        candidate.get("target_role", ""),       # F
+        "", "", "", "",                         # G H I J
+        "", "", "", "", "", "",                 # K L M N O P
+        "",                                     # Q
+        "REJECTED",                             # R - Status
+        "", "", "", "", "", "", "",             # S T U V W X Y
+        candidate.get("application_id", ""),    # Z
+    ]
+    row_num = _append_to_tab("REJECTED", row, token)
+    logger.info("pre_rejected_written", candidate=candidate.get("name"))
+    return row_num
+
+
 def append_screened_candidate(result: dict) -> int:
     """
     Route candidate to the correct tab:
