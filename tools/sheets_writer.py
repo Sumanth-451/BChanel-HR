@@ -34,6 +34,11 @@ def _get_access_token() -> str:
     with open(token_path) as f:
         token_data = json.load(f)
 
+    expiry = None
+    if token_data.get("expiry"):
+        from datetime import datetime
+        expiry = datetime.fromisoformat(token_data["expiry"].replace("Z", "+00:00")).replace(tzinfo=None)
+
     creds = Credentials(
         token=token_data.get("token"),
         refresh_token=token_data.get("refresh_token"),
@@ -41,6 +46,7 @@ def _get_access_token() -> str:
         client_id=token_data.get("client_id"),
         client_secret=token_data.get("client_secret"),
         scopes=token_data.get("scopes"),
+        expiry=expiry,
     )
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
