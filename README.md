@@ -54,10 +54,10 @@ A recruiter uploads a job description and a batch of resumes. From that moment, 
   │  Agent            │  │                  │  │                     │
   │                   │  │  • Twilio calls  │  │  • Checks Google    │
   │  • Parses PDF/    │  │  • AI voice      │  │    Calendar (OAuth) │
-  │    DOCX resumes   │  │    (Edge TTS)    │  │  • Finds free 1-hr  │
+  │    DOCX resumes   │  │    (Twilio Say)  │  │  • Finds free 1-hr  │
   │  • Scores vs JD   │  │  • STT via       │  │    block in window  │
   │  • Ranks top 15   │  │    <Gather>      │  │  • Creates event +  │
-  │  • Groq LLM       │  │  • Collects CTC, │  │    Google Meet link │
+  │  • Cohere LLM     │  │  • Collects CTC, │  │    Google Meet link │
   └────────┬──────────┘  │    reason,       │  │  • Sends emails via │
            │             │    availability  │  │    Gmail API        │
            ▼             └────────┬─────────┘  └──────────┬──────────┘
@@ -224,7 +224,7 @@ Built from scratch to handle the interview scheduling stage. Previously listed a
 **New: Pre-Screening Call Agent** (`agents/pre_screener.py`)
 
 - Dials each approved candidate via Twilio outbound call
-- AI voice conversation powered by Edge TTS (Microsoft Neural) for speech synthesis and Twilio `<Gather input="speech">` for real-time STT
+- AI voice conversation powered by Twilio's built-in TTS (`<Say voice="alice">`) and `<Gather input="speech">` for real-time STT. (An Edge TTS module exists at `voice/tts.py` but is not wired into the live call flow — dead code as of this audit.)
 - Collects all five screening data points: job change intent, reason for change, current CTC, expected CTC, interview availability
 - Full call transcript and extracted screening data stored in MongoDB
 - HITL Gate 2 added for recruiter review
@@ -235,7 +235,7 @@ Built from scratch to handle the interview scheduling stage. Previously listed a
 
 **Initial build: Core pipeline**
 
-- `Resume Shortlister Agent` — parses PDF/DOCX resumes, scores against JD via Groq LLM, returns ranked shortlist with match scores and rationale
+- `Resume Shortlister Agent` — parses PDF/DOCX resumes, scores against JD via Cohere LLM, returns ranked shortlist with match scores and rationale
 - LangGraph `StateGraph` with `interrupt_before` HITL gates
 - FastAPI backend, MongoDB storage, Pydantic schemas
 - HITL Gate 1 — recruiter approves or rejects shortlist with optional feedback (triggers re-run on rejection)
@@ -247,7 +247,7 @@ Built from scratch to handle the interview scheduling stage. Previously listed a
 
 | ID | Title | Type | Priority | Status | Description |
 |----|-------|------|----------|--------|-------------|
-| BL-001 | Production-Ready Voice Agent | Enhancement | High | Planned | Current implementation uses Edge TTS + Twilio `<Gather>`, which buffers the entire audio response before playing — causing 3–5s latency per turn and making calls feel unnatural. Replace with a production-grade voice platform (Vapi, Bolna, or similar) that: streams TTS chunks as they are generated rather than waiting for the full response; handles interruptions and barge-in; natively detects silence and disfluencies (ah, uhm, err) without custom logic; provides call analytics and transcription out of the box. Bolna is preferred for India deployments (Plivo backend, avoids TRAI DND blocks on US numbers). |
+| BL-001 | Production-Ready Voice Agent | Enhancement | High | Planned | Current implementation uses Twilio's built-in `<Say>` TTS + `<Gather>`, which buffers the entire audio response before playing — causing 3–5s latency per turn and making calls feel unnatural. Replace with a production-grade voice platform (Vapi, Bolna, or similar) that: streams TTS chunks as they are generated rather than waiting for the full response; handles interruptions and barge-in; natively detects silence and disfluencies (ah, uhm, err) without custom logic; provides call analytics and transcription out of the box. Bolna is preferred for India deployments (Plivo backend, avoids TRAI DND blocks on US numbers). |
 | BL-002 | Background Verification (BGV) Agent | New Feature | Medium | Planned | Add a BGV Agent node after the onboarding stage. The agent should initiate BGV checks with a third-party provider (e.g., SpringVerify, AuthBridge) for each onboarded candidate, poll for status updates, and surface results to HR via a new HITL gate. Should cover identity, education, and employment history checks at minimum. |
 | BL-003 | Document Collection & Onboarding Formalities Agent | New Feature | Medium | Planned | Extend the Onboarding Agent scope with a dedicated Document Agent that handles post-offer paperwork: sends a document checklist to the candidate (ID proof, educational certificates, previous employment letters, etc.), tracks submission status, and notifies HR when all documents are received. Ideally implemented as an extension of the existing Onboarding Agent with additional state fields and a document-tracking HITL gate. Ties in with BL-002 for BGV document reuse. |
 
@@ -258,9 +258,9 @@ Built from scratch to handle the interview scheduling stage. Previously listed a
 | Layer | Technology |
 |---|---|
 | Agent orchestration | LangGraph `StateGraph` with `interrupt_before` HITL gates |
-| LLM | Groq (`llama-3.3-70b-versatile`) via `langchain-groq` |
+| LLM | Cohere (`command-r-plus-08-2024`) via `langchain-cohere` |
 | Voice calls | Twilio outbound calls + `<Gather input="speech">` for STT |
-| Text-to-speech | Edge TTS (Microsoft Neural, free) — served as MP3 from FastAPI `/static` |
+| Text-to-speech | Twilio built-in TTS (`<Say voice="alice">`). Edge TTS module (`voice/tts.py`) exists but is unused in the live call flow. |
 | Calendar integration | Google Calendar API v3 (Freebusy + Events insert with Google Meet) |
 | Email sending | Gmail API v1 (OAuth2, `gmail.send` scope) — no SMTP or App Passwords |
 | Video conferencing | Google Meet — auto-generated via `conferenceData` on Calendar event creation |
@@ -292,7 +292,7 @@ agentic-hr/
 ├── tools/
 │   ├── base.py                          # @tool_call, @with_retry decorators
 │   ├── file_tools.py                    # PDF/DOCX text extraction
-│   ├── llm_tools.py                     # Groq LLM wrappers
+│   ├── llm_tools.py                     # Cohere LLM wrappers
 │   ├── call_tools.py                    # Twilio outbound call initiator
 │   ├── calendar_tools.py                # Google Calendar freebusy + event creation
 │   └── email_tools.py                   # Gmail API — interview + onboarding emails
@@ -309,7 +309,7 @@ agentic-hr/
 ├── hitl/gates.py                        # HITL decision handlers (approve / reject / onboard)
 ├── voice/
 │   ├── conversation.py                  # TwiML state machine for live calls
-│   └── tts.py                           # Edge TTS audio generation
+│   └── tts.py                           # Edge TTS audio generation (built, not currently wired into the call flow)
 ├── api/
 │   ├── router.py                        # API router registration
 │   └── endpoints/
@@ -345,7 +345,7 @@ cp .env.example .env
 ```
 
 You need:
-- **Groq API key** — free at [console.groq.com](https://console.groq.com)
+- **Cohere API key** — free at [dashboard.cohere.com](https://dashboard.cohere.com)
 - **Twilio account** — free trial at [twilio.com](https://twilio.com) (verify your phone number in trial mode)
 - **MongoDB** — local (`mongodb://localhost:27017`) or Atlas
 - **Google Cloud project** — with Gmail API and Google Calendar API enabled; OAuth client ID downloaded as `google_credentials.json`
@@ -423,9 +423,17 @@ open run_log_<first8chars>.html
 ## Key Design Decisions
 
 - **LangGraph `interrupt_before`** — HITL gates pause graph execution cleanly without polling or timeouts. `MemorySaver` holds checkpoint state in memory while MongoDB holds business data persistently across restarts.
-- **Twilio + Edge TTS** — Twilio handles telephony (STT via `<Gather input="speech">`); Edge TTS generates the AI voice as MP3 served from FastAPI's `/static` endpoint, keeping voice costs at zero. See BL-001 for the planned upgrade to a production-grade streaming voice platform.
+- **Twilio + built-in TTS** — Twilio handles telephony (STT via `<Gather input="speech">`) and speaks responses via `<Say voice="alice">`, keeping voice costs at zero. An Edge TTS module (`voice/tts.py`, Microsoft Neural voices) was built for higher-quality speech but is not currently called anywhere in `voice/conversation.py` — wiring it in is a small follow-up, not a rebuild. See BL-001 for the planned upgrade to a production-grade streaming voice platform.
 - **1-hour block scanning** — Rather than booking the candidate's entire declared window, the scheduler slides a 1-hour window across the availability range and picks the first slot where the recruiter's calendar is free.
 - **Google Meet via `conferenceData`** — Passing `conferenceData` with `conferenceSolutionKey: {type: "hangoutsMeet"}` and `conferenceDataVersion=1` to the Calendar Events insert API auto-generates a Meet link without any additional API calls.
 - **Single OAuth token for calendar + email** — Both the Google Calendar API and Gmail API share the same `google_token.json` issued with `calendar` + `gmail.send` scopes in one OAuth flow.
 - **Async-first** — All I/O is async (motor for MongoDB, async FastAPI). Twilio's sync SDK and Google's sync client libraries are wrapped with `run_in_executor` to avoid blocking the event loop.
 - **Per-session log files** — Every structlog line emitted during a workflow run is written to `logs/<session_id>.jsonl` via a custom processor. The HTML report reads this file directly.
+
+---
+
+## Known Limitations (audit findings, verified against source)
+
+- **Hardcoded personal email addresses.** `tools/calendar_tools.py` (`RECRUITER_CALENDAR_ID`) and `tools/email_tools.py` (`AGENT_EMAIL`, `RECRUITER_EMAIL`) hardcode `sanath.anantha07@gmail.com` / `sanath.anantha08@gmail.com` — the original builder's personal accounts. Not read from `.env`/settings. Must be parameterized before use with a real recruiter/company account.
+- **Timezone hardcoded to IST.** `agents/email_interview_scheduler.py` (`_IST` offset) and `tools/calendar_tools.py` (`timeZone: "Asia/Kolkata"`) assume India Standard Time. Needs to be configurable for teams operating in other timezones.
+- **Edge TTS is unused dead code.** See Tech Stack and Key Design Decisions above — `voice/tts.py` is fully implemented but never called.
